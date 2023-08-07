@@ -8,4 +8,6 @@ import com.lcc.minispring.ioc.config.BeanDefinition;
 public interface BeanFactory {
 
     Object getBean(String name);
+
+    Object getBean(String name, Object... args);
 }

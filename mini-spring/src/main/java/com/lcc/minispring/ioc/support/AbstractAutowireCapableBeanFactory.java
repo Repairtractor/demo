@@ -13,5 +13,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
         return getBean(beanName);
     }
 
+    @Override
+    protected Object createBean(String beanName, BeanDefinition beanDefinition, Object... args) {
+        if (args == null || args.length == 0) {
+            return createBean(beanName, beanDefinition);
+        }
 
+    }
 }
