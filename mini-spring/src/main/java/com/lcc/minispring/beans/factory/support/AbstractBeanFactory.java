@@ -1,10 +1,11 @@
-package com.lcc.minispring.ioc.support;
+package com.lcc.minispring.beans.factory.support;
 
-import com.lcc.minispring.ioc.config.BeanDefinition;
-
-import java.util.Map;
+import com.lcc.minispring.beans.factory.BeanFactory;
+import com.lcc.minispring.beans.factory.config.BeanDefinition;
 
 public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry implements BeanFactory {
+
+
 
 
     @Override
@@ -37,6 +38,10 @@ public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry i
         return singleton;
     }
 
+    @Override
+    public <T> T getBean(String name, Class<T> requiredType) {
+        return null;
+    }
 
     protected abstract Object createBean(String beanName, BeanDefinition beanDefinition);
 

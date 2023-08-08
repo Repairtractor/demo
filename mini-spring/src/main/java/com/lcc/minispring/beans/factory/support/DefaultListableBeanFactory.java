@@ -1,6 +1,6 @@
-package com.lcc.minispring.ioc.support;
+package com.lcc.minispring.beans.factory.support;
 
-import com.lcc.minispring.ioc.config.BeanDefinition;
+import com.lcc.minispring.beans.factory.config.BeanDefinition;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,5 +19,8 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
         beanDefinitionMap.put(beanName, beanDefinition);
     }
 
-
+    @Override
+    public boolean containsBeanDefinition(String beanName) {
+        return beanDefinitionMap.containsKey(beanName);
+    }
 }
