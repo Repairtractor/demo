@@ -15,6 +15,7 @@ public interface BeanDefinitionReader {
      * @throws Exception
      */
     void loadBeanDefinitions(String location) throws Exception;
+    void loadBeanDefinitions(String... location) throws Exception;
 
     BeanDefinitionRegistry getRegistry();
 

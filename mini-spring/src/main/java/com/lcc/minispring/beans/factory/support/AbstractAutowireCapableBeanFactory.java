@@ -13,7 +13,7 @@ import java.util.Arrays;
 
 public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFactory implements AutowireCapableBeanFactory {
 
-    private final InstantiationStrategy instantiationStrategy = new CglibSubclassingInstantiationStrategy();
+    private  InstantiationStrategy instantiationStrategy;
 
 
     @SneakyThrows
@@ -24,7 +24,15 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
         Object bean = getBean(beanName);
         //这里通过bean定义的属性进行注入
         applyPropertyValues(beanName, bean, beanDefinition);
+
+        bean = initializeBean(beanName, bean, beanDefinition);
         return bean;
+    }
+
+    private Object initializeBean(String beanName, Object bean, BeanDefinition beanDefinition) {
+
+
+        return null;
     }
 
     private void applyPropertyValues(String beanName, Object bean, BeanDefinition beanDefinition) {
@@ -67,6 +75,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
             }
         }
         return true;
+    }
+
+    public InstantiationStrategy getInstantiationStrategy() {
+        return instantiationStrategy;
+    }
+
+    public void setInstantiationStrategy(InstantiationStrategy instantiationStrategy) {
+        this.instantiationStrategy = instantiationStrategy;
     }
 
 }

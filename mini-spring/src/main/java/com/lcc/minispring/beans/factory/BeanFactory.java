@@ -14,4 +14,6 @@ public interface BeanFactory {
     void registerBeanDefinition(String beanName, BeanDefinition beanDefinition);
 
     <T> T getBean(String name ,Class<T> requiredType);
+
+
 }

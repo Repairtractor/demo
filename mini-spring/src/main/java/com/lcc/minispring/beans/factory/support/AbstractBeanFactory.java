@@ -2,6 +2,7 @@ package com.lcc.minispring.beans.factory.support;
 
 import com.lcc.minispring.beans.factory.BeanFactory;
 import com.lcc.minispring.beans.factory.config.BeanDefinition;
+import com.lcc.minispring.beans.factory.processor.BeanPostProcessor;
 
 public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry implements BeanFactory {
 
@@ -37,6 +38,8 @@ public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry i
 
         return singleton;
     }
+
+   abstract void addBeanPostProcessor(BeanPostProcessor beanPostProcessor);
 
     @Override
     public <T> T getBean(String name, Class<T> requiredType) {
