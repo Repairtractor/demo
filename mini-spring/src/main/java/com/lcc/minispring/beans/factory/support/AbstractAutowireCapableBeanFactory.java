@@ -6,33 +6,58 @@ import com.lcc.minispring.beans.factory.PropertyValue;
 import com.lcc.minispring.beans.factory.PropertyValues;
 import com.lcc.minispring.beans.factory.config.BeanDefinition;
 import com.lcc.minispring.beans.factory.config.BeanReference;
+import com.lcc.minispring.beans.factory.processor.BeanPostProcessor;
 import lombok.SneakyThrows;
+import org.springframework.beans.BeansException;
 
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 
 public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFactory implements AutowireCapableBeanFactory {
 
-    private  InstantiationStrategy instantiationStrategy;
+    private InstantiationStrategy instantiationStrategy;
 
 
     @SneakyThrows
     @Override
     protected Object createBean(String beanName, BeanDefinition beanDefinition) {
-        //这里通过bean定义new bean 然后放入单例池
-        registerSingleton(beanName, beanDefinition.clazz.newInstance());
-        Object bean = getBean(beanName);
-        //这里通过bean定义的属性进行注入
-        applyPropertyValues(beanName, bean, beanDefinition);
 
-        bean = initializeBean(beanName, bean, beanDefinition);
-        return bean;
+        return createBean(beanName, beanDefinition, null);
+
     }
 
     private Object initializeBean(String beanName, Object bean, BeanDefinition beanDefinition) {
+        Object wrappedBean = applyBeanPostProcessorsBeforeInitialization(bean, beanName);
+        invokeInitMethods(beanName, wrappedBean, beanDefinition);
+        wrappedBean = applyBeanPostProcessorsAfterInitialization(bean, beanName);
+        return wrappedBean;
+    }
 
 
-        return null;
+    private void invokeInitMethods(String beanName, Object wrappedBean, BeanDefinition beanDefinition) {
+
+    }
+
+    @Override
+    public Object applyBeanPostProcessorsBeforeInitialization(Object existingBean, String beanName) throws BeansException {
+        Object result = existingBean;
+        for (BeanPostProcessor processor : getBeanPostProcessors()) {
+            Object current = processor.postProcessBeforeInitialization(result, beanName);
+            if (null == current) return result;
+            result = current;
+        }
+        return result;
+    }
+
+    @Override
+    public Object applyBeanPostProcessorsAfterInitialization(Object existingBean, String beanName) throws BeansException {
+        Object result = existingBean;
+        for (BeanPostProcessor processor : getBeanPostProcessors()) {
+            Object current = processor.postProcessAfterInitialization(result, beanName);
+            if (null == current) return result;
+            result = current;
+        }
+        return result;
     }
 
     private void applyPropertyValues(String beanName, Object bean, BeanDefinition beanDefinition) {
@@ -51,8 +76,21 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
     @Override
     protected Object createBean(String beanName, BeanDefinition beanDefinition, Object... args) {
+        Object bean = createInstance(beanName, beanDefinition, args);
+
+        //这里通过bean定义的属性进行注入
+        applyPropertyValues(beanName, bean, beanDefinition);
+
+        bean = initializeBean(beanName, bean, beanDefinition);
+
+        registerSingleton(beanName, bean);
+        return getBean(beanName);
+    }
+
+    @SneakyThrows
+    private Object createInstance(String beanName, BeanDefinition beanDefinition, Object... args) {
         if (args == null || args.length == 0) {
-            return createBean(beanName, beanDefinition);
+            return beanDefinition.clazz.newInstance();
         }
         Class<?> clazz = beanDefinition.clazz;
         Constructor<?>[] declaredConstructors = clazz.getDeclaredConstructors();
@@ -60,9 +98,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
                 .filter(constructor -> isAllArgsMatch(constructor.getParameterTypes(), args))
                 .findAny()
                 .orElseThrow(() -> new RuntimeException("no such constructor"));
-        Object instantiate = instantiationStrategy.instantiate(beanDefinition, beanName, noSuchConstructor, args);
-        registerSingleton(beanName, instantiate);
-        return getBean(beanName);
+        return getInstantiationStrategy().instantiate(beanDefinition, beanName, noSuchConstructor, args);
     }
 
     private boolean isAllArgsMatch(Class<?>[] parameterTypes, Object[] args) {
@@ -78,7 +114,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
     }
 
     public InstantiationStrategy getInstantiationStrategy() {
-        return instantiationStrategy;
+        return instantiationStrategy == null ? new CglibSubclassingInstantiationStrategy() : instantiationStrategy;
     }
 
     public void setInstantiationStrategy(InstantiationStrategy instantiationStrategy) {

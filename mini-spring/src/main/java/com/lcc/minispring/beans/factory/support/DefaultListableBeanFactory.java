@@ -27,18 +27,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
         return beanDefinitionMap.containsKey(beanName);
     }
 
-    @Override
-    public void addBeanPostProcessor(BeanPostProcessor beanPostProcessor) {
-        
-    }
-
-    @Override
-    public <T> Map<String, T> getBeansOfType(Class<T> type) {
-        return null;
-    }
 
     @Override
     public String[] getBeanDefinitionNames() {
         return beanDefinitionMap.keySet().toArray(new String[0]);
     }
+
+
+
 }
