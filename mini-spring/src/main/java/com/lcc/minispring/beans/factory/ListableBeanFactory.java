@@ -1,5 +1,7 @@
 package com.lcc.minispring.beans.factory;
 
+import com.lcc.minispring.beans.factory.config.BeanDefinition;
+
 import java.util.Map;
 
 /**
@@ -10,4 +12,8 @@ public interface ListableBeanFactory extends BeanFactory {
     <T> Map<String,T> getBeansOfType(Class<T> type);
 
     String[] getBeanDefinitionNames();
+
+    BeanDefinition getBeanDefinition(String beanName);
+
+
 }

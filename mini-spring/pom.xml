@@ -6,7 +6,6 @@
         <groupId>com.lcc</groupId>
         <artifactId>demo</artifactId>
         <version>0.0.1-SNAPSHOT</version>
-        <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
     <artifactId>mini-spring</artifactId>
@@ -17,6 +16,7 @@
     <properties>
         <java.version>8</java.version>
     </properties>
+
     <dependencies>
 
     </dependencies>

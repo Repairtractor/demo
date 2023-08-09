@@ -1,4 +1,4 @@
-package com.lcc.minispring.beans.factory.processor;
+package com.lcc.minispring.beans.factory.config;
 
 import com.lcc.minispring.beans.factory.ConfigurableListableBeanFactory;
 import org.springframework.beans.BeansException;

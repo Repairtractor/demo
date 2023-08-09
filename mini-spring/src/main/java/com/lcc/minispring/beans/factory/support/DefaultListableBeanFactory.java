@@ -2,7 +2,6 @@ package com.lcc.minispring.beans.factory.support;
 
 import com.lcc.minispring.beans.factory.ConfigurableListableBeanFactory;
 import com.lcc.minispring.beans.factory.config.BeanDefinition;
-import com.lcc.minispring.beans.factory.processor.BeanPostProcessor;
 
 
 import java.util.Map;
@@ -13,7 +12,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
     private final Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>(256);
 
     @Override
-    protected BeanDefinition getBeanDefinition(String beanName) {
+    public BeanDefinition getBeanDefinition(String beanName) {
         return beanDefinitionMap.get(beanName);
     }
 
@@ -34,5 +33,17 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
     }
 
 
-
+    @Override
+    public <T> Map<String, T> getBeansOfType(Class<T> type) {
+        //todo 这里不对，这里应该是可以初始化bean的
+        String[] beanDefinitionNames = getBeanDefinitionNames();
+        Map<String, T> result = new ConcurrentHashMap<>();
+        for (String beanDefinitionName : beanDefinitionNames) {
+            BeanDefinition beanDefinition = getBeanDefinition(beanDefinitionName);
+            if (type.isAssignableFrom(beanDefinition.clazz)) {
+                result.put(beanDefinitionName, (T) getBean(beanDefinitionName));
+            }
+        }
+        return result;
+    }
 }

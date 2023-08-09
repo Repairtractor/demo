@@ -1,9 +1,6 @@
-package com.lcc.minispring.beans.factory.context;
+package com.lcc.minispring.context;
 
-import com.lcc.minispring.beans.factory.config.BeanDefinition;
 import org.springframework.beans.BeansException;
-
-import java.util.Map;
 
 public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContext {
 
@@ -29,6 +26,7 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
      */
     public ClassPathXmlApplicationContext(String[] configLocations) throws BeansException {
         this.configLocations = configLocations;
+        //初始化加载容器
         refresh();
     }
 

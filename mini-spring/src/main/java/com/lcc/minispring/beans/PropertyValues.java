@@ -1,5 +1,6 @@
-package com.lcc.minispring.beans.factory;
+package com.lcc.minispring.beans;
 
+import com.lcc.minispring.beans.PropertyValue;
 import lombok.Getter;
 
 import java.util.ArrayList;

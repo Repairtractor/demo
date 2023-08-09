@@ -1,19 +1,24 @@
 package com.lcc.minispring;
 
+import com.lcc.minispring.DTO.UserService;
 import com.lcc.minispring.beans.factory.config.BeanDefinition;
 import com.lcc.minispring.beans.factory.support.DefaultListableBeanFactory;
+import com.lcc.minispring.context.ApplicationContext;
+import com.lcc.minispring.context.ClassPathXmlApplicationContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.Objects;
 
 @SpringBootTest
 class MiniSpringApplicationTests {
 
     @Test
     void contextLoads() {
-        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
-        beanFactory.registerBeanDefinition("user",new BeanDefinition(User.class));
-        User user = (User) beanFactory.getBean("user","lcc");
-        user.say();
+        ApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring.xml");
+        UserService userService = (UserService) applicationContext.getBean("userDaoService");
+        UserService userService1 = (UserService) applicationContext.getBean("userDaoService");
+        System.out.println(Objects.equals(userService, userService1));
 
     }
 

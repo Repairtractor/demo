@@ -1,4 +1,4 @@
-package com.lcc.minispring.beans.factory.reader;
+package com.lcc.minispring.beans.factory.support;
 
 import com.lcc.minispring.beans.factory.support.BeanDefinitionRegistry;
 import com.lcc.minispring.core.io.Resource;

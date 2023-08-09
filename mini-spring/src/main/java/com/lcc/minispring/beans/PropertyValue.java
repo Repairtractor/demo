@@ -1,4 +1,4 @@
-package com.lcc.minispring.beans.factory;
+package com.lcc.minispring.beans;
 
 public class PropertyValue {
     public final String name;

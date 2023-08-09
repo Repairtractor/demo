@@ -1,6 +1,6 @@
-package com.lcc.minispring.beans.factory.context;
+package com.lcc.minispring.context;
 
-import com.lcc.minispring.beans.factory.reader.XmlBeanDefinitionReader;
+import com.lcc.minispring.beans.factory.xml.XmlBeanDefinitionReader;
 import com.lcc.minispring.beans.factory.support.DefaultListableBeanFactory;
 import lombok.SneakyThrows;
 
