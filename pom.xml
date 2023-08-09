@@ -13,7 +13,7 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>demo</name>
 
-	<packaging>pom</packaging>
+    <packaging>pom</packaging>
 
 	<properties>
 		<java.version>8</java.version>
