@@ -61,7 +61,7 @@ class RedisDemoApplicationTests {
      */
     private void testRedis3(String key) {
         //使用uuid作为标识，防止误删其他线程的锁
-        String uuid = key == null ? UUID.fastUUID().toString(): key;
+        String uuid = key == null ? UUID.fastUUID().toString() : key;
 
         if (Boolean.TRUE.equals(tryLock(uuid))) {
             log.info("线程{}获取锁成功", Thread.currentThread().getName());
@@ -92,10 +92,36 @@ class RedisDemoApplicationTests {
         }
     }
 
+    /**
+     * 异步线程，执行续期
+     *
+     * @param uuid
+     * @return
+     */
+    private void RenewalExpire(String uuid, String key) {
+        String script = "if(redis.call('hexists', KEYS[1], ARGV[1]) == 1) then redis.call('expire', KEYS[1], ARGV[2]); return 1; else return 0; end";
+        new Thread(() -> {
+
+            //异步线程，如果是当前线程持有锁，直接续期一倍
+            do {
+                //先睡过期时间的3分之二时间
+                ThreadUtil.sleep(1000 / 3 * 2);
+                //然后进行续期
+            } while (Boolean.TRUE.equals(redissonClient.getScript().eval(RScript.Mode.READ_WRITE, script, RScript.ReturnType.BOOLEAN, Arrays.asList(key), uuid)));
+
+        }).start();
+    }
+
+
+
+
+
     private boolean tryLock(String uuid) {
         RScript script = redissonClient.getScript();
         String lua = IoUtil.read(FileUtil.getReader("lua/HashLock.lua", "utf-8"));
         Object success = script.eval(RScript.Mode.READ_WRITE, lua, RScript.ReturnType.BOOLEAN, Arrays.asList("lock"), uuid);
+
+        RenewalExpire(uuid, "lock");
         return Boolean.TRUE.equals(success);
     }
 
