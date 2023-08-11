@@ -1,10 +1,12 @@
-package com.example.redisdemo.myLock;
+package com.example.redisdemo.lock;
 
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.LocalCachedMapOptions;
+import org.redisson.api.RLocalCachedMap;
+import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.redisson.client.RedisClient;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,6 +17,7 @@ import java.util.Objects;
  */
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 public class MyLock {
 
     final RedissonClient redisson;
@@ -25,7 +28,8 @@ public class MyLock {
     @GetMapping("/testLock")
     public void testLock() {
         assert redisson != null;
-        extracted();
+        extracted1();
+        log.error("cccccccccccccccccccccccccccccccccccccccc");
         count++;
     }
 
@@ -39,15 +43,26 @@ public class MyLock {
         redisson.getBucket("count").set((Integer) count + 1);
     }
 
+    private void extracted1() {
+        //自增count 序列
+        RLock lock = redisson.getLock("lock");
+
+        lock.lock();
+        long count1 = redisson.getAtomicLong("count").incrementAndGet();
+        System.out.println("当前count值为：" + count1);
+        lock.unlock();
+    }
+
     @GetMapping("/count")
-    public Integer count() {
+    public Long count() {
         System.out.println("本服务执行了" + count + "次");
         assert redisson != null;
-        Object count = redisson.getBucket("count").get();
-        if (Objects.isNull(count)) {
-            redisson.getBucket("count").set(1);
+
+        boolean exists = redisson.getAtomicLong("count").isExists();
+        if (!exists) {
+            redisson.getAtomicLong("count").set(0);
         }
-        return (Integer) count;
+        return redisson.getAtomicLong("count").get();
     }
 
 
