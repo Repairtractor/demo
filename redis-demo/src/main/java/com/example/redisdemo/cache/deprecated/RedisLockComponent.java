@@ -1,4 +1,4 @@
-package com.example.redisdemo.cache;
+package com.example.redisdemo.cache.deprecated;
 
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -11,6 +11,7 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
+//todo 后续需要重构
 @Component
 public class RedisLockComponent {
 

@@ -6,6 +6,7 @@ import cn.hutool.core.lang.UUID;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.extra.spring.SpringUtil;
+import cn.hutool.json.JSONUtil;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -227,9 +228,8 @@ class RedisDemoApplicationTests {
 
     @Test
     public void testSerialization() {
-        RBuckets buckets = redissonClient.getBuckets(JsonJacksonCodec.INSTANCE);
-        redissonClient.getBucket("cc").get();
-        buckets.set(MapUtil.of("test", "test"));
+        RBucket<Object> bucket = redissonClient.getBucket("test", StringCodec.INSTANCE);
+        bucket.set(JSONUtil.toJsonStr(new Person().setName("lcc").setAge(1)));
     }
 
     @Data

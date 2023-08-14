@@ -1,6 +1,8 @@
-package com.example.redisdemo.cache;
+package com.example.redisdemo.cache.deprecated;
 
 import cn.hutool.core.collection.CollUtil;
+import com.example.redisdemo.cache.AbstratctRedisRetrySynchronizer;
+import com.example.redisdemo.cache.CacheConfigEnum;
 import org.redisson.api.RStream;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.StreamMessageId;
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
  *
  * @param <V>
  */
+//todo 后续需要重构
 public class MultipleRedisRetrySynchronizer<V> extends AbstratctRedisRetrySynchronizer<V> {
 
     private final RedisLockComponent redisLockComponent;

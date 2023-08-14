@@ -3,6 +3,7 @@ package com.example.redisdemo.cache;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.json.JSONUtil;
+import com.example.redisdemo.cache.deprecated.RedisRetrySynchronizer;
 import org.redisson.api.RedissonClient;
 
 import java.util.Collection;
