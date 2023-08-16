@@ -3,14 +3,23 @@ package com.example.redisdemo;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.lang.UUID;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.extra.spring.SpringUtil;
+import cn.hutool.json.JSONUtil;
+import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBucket;
+import org.redisson.api.RBuckets;
 import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.codec.FstCodec;
+import org.redisson.codec.JacksonCodec;
+import org.redisson.codec.JsonJacksonCodec;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.FileInputStream;
@@ -111,9 +120,6 @@ class RedisDemoApplicationTests {
 
         }).start();
     }
-
-
-
 
 
     private boolean tryLock(String uuid) {
@@ -217,6 +223,20 @@ class RedisDemoApplicationTests {
             testRedis();
             log.info("线程{}睡醒了", Thread.currentThread().getName());
         }
+    }
+
+
+    @Test
+    public void testSerialization() {
+        RBucket<Object> bucket = redissonClient.getBucket("test", StringCodec.INSTANCE);
+        bucket.set(JSONUtil.toJsonStr(new Person().setName("lcc").setAge(1)));
+    }
+
+    @Data
+    @Accessors(chain = true)
+    public static class Person {
+        public String name;
+        public Integer age;
     }
 
 }
