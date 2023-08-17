@@ -4,9 +4,6 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.TypeReference;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.example.redisdemo.cache.deprecated.MultipleRedisRetrySynchronizer;
-import com.example.redisdemo.cache.deprecated.RedisLockComponent;
-import com.example.redisdemo.cache.deprecated.RedisRetrySynchronizer;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
@@ -17,11 +14,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static com.example.redisdemo.cache.LogEnum.CACHE_INFO;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -44,7 +40,7 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
     private RedisRetrySynchronizer<V> redisRetrySynchronizer;
 
     //缓存配置
-    private final CacheConfigEnum config;
+    private final CacheConfig config;
 
 
     @Resource
@@ -53,16 +49,13 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
     RBuckets rBuckets;
 
 
-    @Resource
-    private RedisLockComponent redisLockComponent;
-
 
     /**
      * @param getSetter           keyValue获取器
      * @param isRetrySynchronizer 缓存同步器，默认false，不开启时不会进入同步机制，一致性较差，性能较好，存在缓存穿透问题，建议开启
      * @param config              缓存配置
      */
-    protected AbstractRedisCache(CacheConfigEnum config, GetSetter<T, String, V> getSetter, boolean isRetrySynchronizer) {
+    protected AbstractRedisCache(CacheConfig config, GetSetter<T, String, V> getSetter, boolean isRetrySynchronizer) {
         this.getSetter = getSetter;
         this.isRetrySynchronizer = isRetrySynchronizer;
         this.config = config;
@@ -70,28 +63,24 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
 
     @PostConstruct
     public void init() {
-        this.keyPath = config.key + CacheConfigEnum.RedisCacheConstant.CacheKeyComa + config.code + CacheConfigEnum.RedisCacheConstant.CacheKeyComa;
+        this.keyPath = config.getCachePath() + RedisCacheConstant.CacheKeyComa;
         this.rBuckets = redisson.getBuckets(StringCodec.INSTANCE);
-        //开启重试同步器
-        if (isRetrySynchronizer) {
-            redisRetrySynchronizer = new MultipleRedisRetrySynchronizer<>(keyPath, redisson, config, redisLockComponent);
-        }
     }
 
 
-    protected AbstractRedisCache(CacheConfigEnum config, GetSetter<T, String, V> getSetter) {
+    protected AbstractRedisCache(CacheConfig config, GetSetter<T, String, V> getSetter) {
         this(config, getSetter, false);
     }
 
 
     @Override
     public void removeKey(Collection<String> codes) {
-        CACHE_INFO.info("开始删除redis缓存,keys：{}", codes);
+        LogUtils.info("开始删除redis缓存,keys：{}", codes);
         List<String> keys = codes.stream().map(it -> keyPath + it).collect(toList());
         try {
             redisson.getKeys().delete(keys.toArray(new String[0]));
         } catch (Exception exception) {
-            CACHE_INFO.info("删除redis缓存失败了，移送队列尝试重试，keys:{}", codes);
+            LogUtils.info("删除redis缓存失败了，移送队列尝试重试，keys:{}", codes);
 
             codes.forEach(it -> retry(it, null));
         }
@@ -113,7 +102,7 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
             rBuckets.set(redisKeyValueMap);
             syncExpire(redisKeyValueMap);
         } catch (Exception exception) {
-            CACHE_INFO.error("批量添加数据失败，移送队列进行重试");
+            LogUtils.error("批量添加数据失败，移送队列进行重试");
             list.forEach(it -> retry(getSetter.keyGetter.apply(it), getSetter.valueGetter.apply(it)));
         }
     }
@@ -125,12 +114,11 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
      */
     private void syncExpire(Map<String, String> redisKeyValueMap) {
         //如果没有设置超时时间，直接返回
-        if (config.expireTime <= 0) {
+        if (config.getExpireTime() <= 0) {
             return;
         }
-
-        CompletableFuture.runAsync(()->{
-            redisKeyValueMap.keySet().forEach(it -> redisson.getKeys().expire(it, config.expireTime, TimeUnit.MILLISECONDS));
+        Executors.newSingleThreadExecutor().execute(() -> {
+            redisKeyValueMap.keySet().forEach(it -> redisson.getKeys().expire(it, config.getExpireTime(), TimeUnit.SECONDS));
         });
     }
 
@@ -158,10 +146,10 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
                         JSONUtil.toBean(v, new TypeReference<V>() {
                         }, false) : (V) v);
             });
-            CACHE_INFO.info("查询缓存结束。本次缓存查询结果数量:{},查询keys:{}", result.size(), CollUtil.sub(keys, 0, 10));
+            LogUtils.info("查询缓存结束。本次缓存查询结果数量:{},查询keys:{}", result.size(), CollUtil.sub(keys, 0, 10));
             return result;
         }
-        CACHE_INFO.info("没有全部命中缓存，从原数据添加缓存,本次缓存查询keys数量：{}，未命中缓存keys数量：{}", keys.size(), reKeys.size());
+        LogUtils.info("没有全部命中缓存，从原数据添加缓存,本次缓存查询keys数量：{}，未命中缓存keys数量：{}", keys.size(), reKeys.size());
         retrySet(reKeys);
         return get(keys, false);
     }
@@ -189,7 +177,7 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
             }
             return get(codes, false);
         } catch (Exception ex) {
-            CACHE_INFO.error("构建缓存失败，本次构建keys：{}", CollUtil.join(codes, StrUtil.COMMA));
+            LogUtils.error("构建缓存失败，本次构建keys：{}", CollUtil.join(codes, StrUtil.COMMA));
             throw ex;
         } finally {
             if (isRetrySynchronizer)

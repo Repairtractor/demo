@@ -2,8 +2,7 @@ package com.example.redisdemo.cache.deprecated;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ConcurrentHashSet;
-import com.example.redisdemo.cache.AbstratctRedisRetrySynchronizer;
-import com.example.redisdemo.cache.CacheConfigEnum;
+import com.example.redisdemo.cache.CacheConfig;
 import org.redisson.api.RedissonClient;
 
 import java.util.Collection;
@@ -25,7 +24,7 @@ public class SimpleRetrySynchronizer<V> extends AbstratctRedisRetrySynchronizer<
     private final Set<Thread> threads = new ConcurrentHashSet<>();
 
 
-    public SimpleRetrySynchronizer(String keyPath, RedissonClient redisson, CacheConfigEnum config) {
+    public SimpleRetrySynchronizer(String keyPath, RedissonClient redisson, CacheConfig config) {
         super(keyPath, redisson, config);
         this.redisTaskRetryQueue = new LinkedBlockingQueue<>();
         init();

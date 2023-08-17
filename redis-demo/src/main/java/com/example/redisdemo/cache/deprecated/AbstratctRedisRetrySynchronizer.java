@@ -1,9 +1,11 @@
-package com.example.redisdemo.cache;
+package com.example.redisdemo.cache.deprecated;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.json.JSONUtil;
-import com.example.redisdemo.cache.deprecated.RedisRetrySynchronizer;
+import com.example.redisdemo.cache.CacheConfig;
+import com.example.redisdemo.cache.LogUtils;
+import com.example.redisdemo.cache.RedisCacheConstant;
 import org.redisson.api.RedissonClient;
 
 import java.util.Collection;
@@ -14,7 +16,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.example.redisdemo.cache.LogEnum.CACHE_INFO;
 
 public abstract class AbstratctRedisRetrySynchronizer<V> implements RedisRetrySynchronizer<V> {
 
@@ -29,7 +30,7 @@ public abstract class AbstratctRedisRetrySynchronizer<V> implements RedisRetrySy
 
     private final String keyPath;
 
-    protected final CacheConfigEnum expire;
+    protected final CacheConfig expire;
 
     protected final RedissonClient redisson;
 
@@ -67,11 +68,11 @@ public abstract class AbstratctRedisRetrySynchronizer<V> implements RedisRetrySy
     }
 
 
-    public AbstratctRedisRetrySynchronizer(String keyPath, RedissonClient redisson, CacheConfigEnum expire) {
+    public AbstratctRedisRetrySynchronizer(String keyPath, RedissonClient redisson, CacheConfig expire) {
         this.keyPath = keyPath;
         this.redisson = redisson;
         this.expire = expire;
-        this.failKSet = new ConcurrentHashSet<>(CacheConfigEnum.RedisCacheConstant.FAIL_MAX_SIZE);
+        this.failKSet = new ConcurrentHashSet<>(RedisCacheConstant.FAIL_MAX_SIZE);
         init();
     }
 
@@ -81,7 +82,7 @@ public abstract class AbstratctRedisRetrySynchronizer<V> implements RedisRetrySy
         Executors.newSingleThreadExecutor().execute(() -> {
             while (true) {
                 try {
-                    CACHE_INFO.info("开始进行队列重试机制，当前队列数量：{}", retryingSize());
+                    LogUtils.info("开始进行队列重试机制，当前队列数量：{}", retryingSize());
                     Collection<ReTime> reTimes = consume();
                     if (CollUtil.isEmpty(reTimes)) {
                         isRetrying.set(false);
@@ -105,19 +106,19 @@ public abstract class AbstratctRedisRetrySynchronizer<V> implements RedisRetrySy
 
     protected void add(ReTime reTime) {
         try {
-            CACHE_INFO.info("当前线程正在添加缓存，当前的缓冲队列为还有{}条数据", retryingSize());
+            LogUtils.info("当前线程正在添加缓存，当前的缓冲队列为还有{}条数据", retryingSize());
 
             addRedisValue(reTime.redisKey, reTime.value);
             //添加成功了，删掉失败队列中的key
             removeFailKey(reTime.code);
         } catch (Exception e) {
             if (canNotAdd(reTime)) {
-                CACHE_INFO.error("重试添加操作失败，key已经超过重试次数，将此key失败集合：{}", reTime.code);
+                LogUtils.error("重试添加操作失败，key已经超过重试次数，将此key失败集合：{}", reTime.code);
                 addFailKey(reTime.code);
                 return;
             }
             int time = reTime.time.getAndIncrement();
-            CACHE_INFO.error("重试添加操作失败，key:{}继续进行重试，当前已重试：{}", reTime.code, time);
+            LogUtils.error("重试添加操作失败，key:{}继续进行重试，当前已重试：{}", reTime.code, time);
             retry(reTime);
         }
     }
@@ -131,16 +132,16 @@ public abstract class AbstratctRedisRetrySynchronizer<V> implements RedisRetrySy
 
 
     protected void remove(ReTime reTime) {
-        CACHE_INFO.info("开始删除redis缓存,keys：{}", reTime.code);
+        LogUtils.info("开始删除redis缓存,keys：{}", reTime.code);
         try {
             deleteRedisValue(reTime.redisKey);
         } catch (Exception e) {
             if (canNotAdd(reTime)) {
-                CACHE_INFO.info("超过重试次数，丢弃此key：{}", reTime.code);
+                LogUtils.info("超过重试次数，丢弃此key：{}", reTime.code);
                 addFailKey(reTime.code);
             }
             int time = reTime.time.getAndIncrement();
-            CACHE_INFO.info("删除redis缓存失败了，key:{},当前重试次数为：{}", reTime.code, time);
+            LogUtils.info("删除redis缓存失败了，key:{},当前重试次数为：{}", reTime.code, time);
             retry(reTime);
         }
     }
@@ -157,7 +158,7 @@ public abstract class AbstratctRedisRetrySynchronizer<V> implements RedisRetrySy
 
 
     protected void addRedisValue(String k, V v) {
-        redisson.getBucket(k).set(v, expire.expireTime, TimeUnit.SECONDS);
+        redisson.getBucket(k).set(v, expire.getExpireTime(), TimeUnit.SECONDS);
     }
 
     /**
@@ -212,14 +213,14 @@ public abstract class AbstratctRedisRetrySynchronizer<V> implements RedisRetrySy
 
 
     private boolean canNotAdd(ReTime reTime) {
-        return CacheConfigEnum.RedisCacheConstant.RETRY_TIME <= reTime.time.get();
+        return RedisCacheConstant.RETRY_TIME <= reTime.time.get();
     }
 
     private void addFailKey(String key) {
         //这里要注意多线程问题，两个线程都进入了clear，线程1执行完clear之后去添加，而此时线程2还会执行一次clear，那么就会把线程1的数据也删掉
-        if (Objects.equals(CacheConfigEnum.RedisCacheConstant.FAIL_MAX_SIZE, failKSet.size())) {
+        if (Objects.equals(RedisCacheConstant.FAIL_MAX_SIZE, failKSet.size())) {
             synchronized (failKSet) {
-                if (Objects.equals(CacheConfigEnum.RedisCacheConstant.FAIL_MAX_SIZE, failKSet.size())) {
+                if (Objects.equals(RedisCacheConstant.FAIL_MAX_SIZE, failKSet.size())) {
                     failKSet.clear();
                     failKSet.add(key);
                     return;

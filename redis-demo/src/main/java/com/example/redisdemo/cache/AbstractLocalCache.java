@@ -12,19 +12,18 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static com.example.redisdemo.cache.LogEnum.CACHE_INFO;
 
 
 public abstract class AbstractLocalCache<K, V, T> implements Cache<K, V, T> {
 
-    private final GetSetter<T, K, V> getSetter;
+    final GetSetter<T, K, V> getSetter;
 
-    private LoadingCache<K, V> cache;
+    LoadingCache<K, V> cache;
 
-    private final CacheConstant cacheConstant;
+    final CacheConstant cacheConstant;
 
 
-    private static final CacheConstant CACHE_DEFAULT = new CacheConstant(1000, 1000 * 60);
+    static final CacheConstant CACHE_DEFAULT = new CacheConstant(1000, 1000 * 60);
 
 
     protected CacheLoader<K, V> getCacheCallBack() {
@@ -42,7 +41,7 @@ public abstract class AbstractLocalCache<K, V, T> implements Cache<K, V, T> {
             public @NonNull Map<@NonNull K, @NonNull V> loadAll(@NonNull Iterable<? extends @NonNull K> keys) throws Exception {
                 List<K> list = new ArrayList<>();
                 keys.forEach(list::add);
-                CACHE_INFO.info("本地缓存没有命中，从数据库获取数据，keys：{}", CollUtil.join(keys, ","));
+                LogUtils.info("本地缓存没有命中，从数据库获取数据，keys：{}", CollUtil.join(keys, ","));
                 return getCacheKeyAndValue(list);
             }
 
@@ -50,10 +49,10 @@ public abstract class AbstractLocalCache<K, V, T> implements Cache<K, V, T> {
     }
 
 
-    protected AbstractLocalCache(CacheConfigEnum configEnum, GetSetter<T, K, V> getSetter) {
-        this(getSetter, configEnum.maxCapacity >= 0
-                && configEnum.expireTime >= 0
-                ? new CacheConstant(configEnum.maxCapacity, configEnum.expireTime)
+    protected AbstractLocalCache(CacheConfig cacheConfig, GetSetter<T, K, V> getSetter) {
+        this(getSetter, cacheConfig.getMaxCapacity() >= 0
+                && cacheConfig.getExpireTime() >= 0
+                ? new CacheConstant(cacheConfig.getMaxCapacity(), cacheConfig.getExpireTime())
                 : CACHE_DEFAULT);
     }
 
@@ -63,13 +62,13 @@ public abstract class AbstractLocalCache<K, V, T> implements Cache<K, V, T> {
 
     protected AbstractLocalCache(GetSetter<T, K, V> getSetter, CacheConstant cacheConstant) {
         this.getSetter = getSetter;
-        this.cacheConstant = cacheConstant == null ? CACHE_DEFAULT : cacheConstant;
+        this.cacheConstant = cacheConstant;
         initCache();
     }
 
 
     private void initCache() {
-        CACHE_INFO.info("初始化本地缓存，缓存大小：{}，缓存超时时间：{}ms", cacheConstant.maxSize, cacheConstant.expireTime);
+        LogUtils.info("初始化本地缓存，缓存大小：{}，缓存超时时间：{}ms", cacheConstant.maxSize, cacheConstant.expireTime);
         this.cache = Caffeine.newBuilder()
                 .maximumSize(cacheConstant.maxSize)
                 .expireAfterWrite(cacheConstant.expireTime, TimeUnit.MILLISECONDS)
@@ -102,7 +101,6 @@ public abstract class AbstractLocalCache<K, V, T> implements Cache<K, V, T> {
     protected Map<K, V> getCacheKeyAndValue(List<K> keys) {
         return sourceAll(keys).stream().collect(Collectors.toMap(getSetter.keyGetter, getSetter.valueGetter));
     }
-
 
     @AllArgsConstructor
     protected static class CacheConstant {
