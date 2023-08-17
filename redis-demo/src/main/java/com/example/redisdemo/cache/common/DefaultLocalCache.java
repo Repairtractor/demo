@@ -1,4 +1,4 @@
-package com.example.redisdemo.cache;
+package com.example.redisdemo.cache.common;
 
 import java.time.Duration;
 import java.util.Collection;

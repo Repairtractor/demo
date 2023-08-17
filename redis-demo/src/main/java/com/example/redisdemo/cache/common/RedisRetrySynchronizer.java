@@ -1,4 +1,4 @@
-package com.example.redisdemo.cache.deprecated;
+package com.example.redisdemo.cache.common;
 
 import java.util.Collection;
 

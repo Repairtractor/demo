@@ -1,4 +1,4 @@
-package com.example.redisdemo.cache;
+package com.example.redisdemo.cache.common;
 
 /**
      * redisson 常量配置

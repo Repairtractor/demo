@@ -1,8 +1,8 @@
-package com.example.redisdemo.cache.deprecated;
+package com.example.redisdemo.cache.common.deprecated;
 
 import cn.hutool.core.collection.CollUtil;
-import com.example.redisdemo.cache.CacheConfig;
-import com.example.redisdemo.cache.RedisCacheConstant;
+import com.example.redisdemo.cache.common.CacheConfig;
+import com.example.redisdemo.cache.common.RedisCacheConstant;
 import org.redisson.api.RStream;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.StreamMessageId;

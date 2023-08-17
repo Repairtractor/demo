@@ -1,11 +1,11 @@
-package com.example.redisdemo.cache.deprecated;
+package com.example.redisdemo.cache.common.deprecated;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.json.JSONUtil;
-import com.example.redisdemo.cache.CacheConfig;
-import com.example.redisdemo.cache.LogUtils;
-import com.example.redisdemo.cache.RedisCacheConstant;
+import com.example.redisdemo.cache.common.CacheConfig;
+import com.example.redisdemo.cache.common.LogUtils;
+import com.example.redisdemo.cache.common.RedisCacheConstant;
 import org.redisson.api.RedissonClient;
 
 import java.util.Collection;

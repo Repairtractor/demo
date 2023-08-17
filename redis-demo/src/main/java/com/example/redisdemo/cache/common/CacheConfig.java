@@ -1,4 +1,4 @@
-package com.example.redisdemo.cache;
+package com.example.redisdemo.cache.common;
 
 /**
  * 缓存的配置接口，使用缓存请实现该接口，推荐枚举实现

@@ -1,4 +1,4 @@
-package com.example.redisdemo.cache.deprecated;
+package com.example.redisdemo.cache.common.deprecated;
 
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;

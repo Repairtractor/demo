@@ -1,4 +1,4 @@
-package com.example.redisdemo.cache;
+package com.example.redisdemo.cache.common;
 
 import cn.hutool.core.collection.CollUtil;
 import lombok.AllArgsConstructor;
