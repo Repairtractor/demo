@@ -18,6 +18,7 @@ public class TwoSum {
             Integer i1 = map.get(target - nums[i]);
             if (Objects.isNull(i1)) {
                 map.put(nums[i], i);
+
                 continue;
             }
             return new int[]{i1,i };
