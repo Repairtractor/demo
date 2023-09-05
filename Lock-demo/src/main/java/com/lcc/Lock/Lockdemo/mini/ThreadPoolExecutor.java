@@ -3,7 +3,9 @@ package com.lcc.Lock.Lockdemo.mini;
 import cn.hutool.core.thread.ThreadUtil;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -55,7 +57,7 @@ public class ThreadPoolExecutor extends AbstractExecutor {
     /**
      * 线程池停止
      */
-    private volatile boolean showdown;
+    private volatile AtomicBoolean showdown;
 
 
     /**
@@ -104,6 +106,33 @@ public class ThreadPoolExecutor extends AbstractExecutor {
         // 线程数也大于最大线程，队列也满了，需要执行拒绝策略
         rejectedHandler.rejectedExecution(runnable, this);
     }
+
+    /**
+     * 中断所有正在执行的任务，返回所有还没有开始的任务
+     *
+     * @return
+     */
+    public List<Runnable> shutdownNow() {
+        mainLock.lock();
+        ArrayList<Runnable> runnables = new ArrayList<>();
+        try {
+
+            boolean b = showdown.compareAndSet(false, true);
+            if (b) {
+                //设置标识量为true，成功之后
+                //中断所有正在执行的线程
+                for (Worker it : workers) {
+                    it.task.interrupt();
+                }
+                workQueue.drainTo(runnables);
+            }
+
+        } finally {
+            mainLock.unlock();
+        }
+        return runnables;
+    }
+
 
     /**
      * 执行任务，
@@ -192,12 +221,12 @@ public class ThreadPoolExecutor extends AbstractExecutor {
      * 设置线程池结束
      */
     private void shutdown() {
-        this.showdown = true;
+        this.showdown.compareAndSet(false, true);
     }
 
 
     private boolean isRunning() {
-        return !showdown;
+        return !showdown.get();
     }
 
 
