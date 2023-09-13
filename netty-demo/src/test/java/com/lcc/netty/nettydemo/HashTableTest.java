@@ -8,6 +8,6 @@ public class HashTableTest {
     @Test
     void test(){
         Hashtable<Object, Object> objectObjectHashtable = new Hashtable<>();
-
+        System.out.println();
     }
 }
