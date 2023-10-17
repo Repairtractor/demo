@@ -22,7 +22,43 @@
     </properties>
     <dependencies>
 
+
+        <!-- https://mvnrepository.com/artifact/com.google.apis/google-api-services-analyticsreporting -->
+<!--        <dependency>-->
+<!--            <groupId>com.google.apis</groupId>-->
+<!--            <artifactId>google-api-services-analyticsreporting</artifactId>-->
+<!--            <version>v4-rev20211020-2.0.0</version>-->
+<!--        </dependency>-->
+
+        <dependency>
+            <groupId>com.google.api-ads</groupId>
+            <artifactId>google-ads</artifactId>
+            <version>27.0.0</version>
+
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.beust</groupId>P
+            <artifactId>jcommander</artifactId>
+            <version>1.64</version>
+        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>com.google.analytics</groupId>-->
+<!--            <artifactId>google-analytics-data</artifactId>-->
+<!--            <version>0.35.0</version>-->
+<!--        </dependency>-->
+
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>easyexcel</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+
+
     </dependencies>
+
 
     <build>
 

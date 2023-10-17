@@ -1,4 +1,4 @@
-package com.lcc.leetcode.leetcodedemo.hot100;
+package com.lcc.leetcode.leetcodedemo.经典150题;
 
 public class 除自身以外数组的乘积238 {
     public int[] productExceptSelf(int[] nums) {

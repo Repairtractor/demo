@@ -1,4 +1,4 @@
-package com.lcc.leetcode.leetcodedemo.hot100;
+package com.lcc.leetcode.leetcodedemo.经典150题;
 
 public class 轮转数组189 {
     public void rotate(int[] nums, int k) {

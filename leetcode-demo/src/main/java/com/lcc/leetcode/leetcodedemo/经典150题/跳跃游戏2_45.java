@@ -1,4 +1,4 @@
-package com.lcc.leetcode.leetcodedemo.hot100;
+package com.lcc.leetcode.leetcodedemo.经典150题;
 
 public class 跳跃游戏2_45 {
     public int jump(int[] nums) {

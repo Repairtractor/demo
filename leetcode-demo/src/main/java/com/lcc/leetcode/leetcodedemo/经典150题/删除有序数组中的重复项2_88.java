@@ -1,4 +1,4 @@
-package com.lcc.leetcode.leetcodedemo.hot100;
+package com.lcc.leetcode.leetcodedemo.经典150题;
 
 public class 删除有序数组中的重复项2_88 {
     public int removeDuplicates(int[] nums) {

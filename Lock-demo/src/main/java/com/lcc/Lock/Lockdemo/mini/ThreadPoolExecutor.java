@@ -114,7 +114,7 @@ public class ThreadPoolExecutor extends AbstractExecutor {
      */
     public List<Runnable> shutdownNow() {
         mainLock.lock();
-        ArrayList<Runnable> runnables = new ArrayList<>();
+        ArrayList<Runnable> runnable = new ArrayList<>();
         try {
 
             boolean b = showdown.compareAndSet(false, true);
@@ -124,13 +124,13 @@ public class ThreadPoolExecutor extends AbstractExecutor {
                 for (Worker it : workers) {
                     it.task.interrupt();
                 }
-                workQueue.drainTo(runnables);
+                workQueue.drainTo(runnable);
             }
 
         } finally {
             mainLock.unlock();
         }
-        return runnables;
+        return runnable;
     }
 
 

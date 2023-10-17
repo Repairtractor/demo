@@ -1,4 +1,4 @@
-package com.lcc.leetcode.leetcodedemo.hot100;
+package com.lcc.leetcode.leetcodedemo.经典150题;
 
 public class 买卖股票的最佳时机121 {
     public int maxProfit(int[] prices) {
