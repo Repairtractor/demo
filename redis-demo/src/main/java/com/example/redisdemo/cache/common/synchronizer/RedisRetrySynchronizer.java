@@ -1,10 +1,12 @@
-package com.example.redisdemo.cache.common.deprecated;
+package com.example.redisdemo.cache.common.synchronizer;
 
 import java.util.Collection;
 
 /**
  * 同步器，目前是利用阻塞队列实现
- *  后续需要优化为可选择性的消息队列和阻塞队列
+ * 后续需要优化为可选择性的消息队列和阻塞队列
+ *
+ * 要解决的问题：可以使用在重建缓存中，防止缓存重复创建
  *
  * @param <V>
  */
@@ -27,15 +29,26 @@ public interface RedisRetrySynchronizer<V> {
 
     /**
      * 判断当前key是否可以获取缓存
+     *
      * @param keys
      * @param isWaitSynchronizedEnd
      * @param timeout
      * @return
      */
-    public boolean isReady(Collection<String> keys, boolean isWaitSynchronizedEnd, long timeout);
+    boolean isReady(Collection<String> keys, boolean isWaitSynchronizedEnd, long timeout);
 
+    /**
+     * key value 重试
+     * @param k
+     * @param v
+     */
     void retry(String k, V v);
 
-    public boolean isReady(Collection<String> keys);
+    /**
+     * 判断当前key是否可以获取缓存
+     * @param keys
+     * @return
+     */
+    boolean isReady(Collection<String> keys);
 
 }

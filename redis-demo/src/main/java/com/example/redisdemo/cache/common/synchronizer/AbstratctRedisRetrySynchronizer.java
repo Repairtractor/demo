@@ -1,4 +1,4 @@
-package com.example.redisdemo.cache.common.deprecated;
+package com.example.redisdemo.cache.common.synchronizer;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ConcurrentHashSet;
@@ -78,12 +78,15 @@ public abstract class AbstratctRedisRetrySynchronizer<V> implements RedisRetrySy
     }
 
 
+    /**
+     * 初始化程序时就异步的进行失败队列的轮询
+     */
     protected void init() {
         //这里只是进行重试，由子类实现consumer来实现通信
         Executors.newSingleThreadExecutor().execute(() -> {
             while (true) {
                 try {
-                    log.info("开始进行队列重试机制，当前队列数量：{}", retryingSize());
+                    log.info("Starting the queue retry mechanism, current queue size: {}", retryingSize());
                     Collection<ReTime> reTimes = consume();
                     if (CollUtil.isEmpty(reTimes)) {
                         isRetrying.set(false);

@@ -1,4 +1,4 @@
-package com.example.redisdemo.cache.common.deprecated;
+package com.example.redisdemo.cache.common.synchronizer;
 
 
 import com.alibaba.ttl.TtlRunnable;

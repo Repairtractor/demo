@@ -1,4 +1,4 @@
-package com.example.redisdemo.cache.common.deprecated;
+package com.example.redisdemo.cache.common.synchronizer;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ConcurrentHashSet;
@@ -14,6 +14,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.LockSupport;
 
 
+/**
+ * jvm内程序锁
+ * @param <V>
+ */
 public class SimpleRetrySynchronizer<V> extends AbstratctRedisRetrySynchronizer<V> {
 
 

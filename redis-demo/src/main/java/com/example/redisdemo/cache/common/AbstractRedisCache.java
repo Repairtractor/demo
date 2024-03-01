@@ -4,8 +4,9 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.Pair;
 import cn.hutool.core.lang.TypeReference;
 import cn.hutool.json.JSONUtil;
-import com.example.redisdemo.cache.common.deprecated.ConcurrencyUtil;
-import com.example.redisdemo.cache.common.deprecated.cache.RedisRetrySynchronizer;
+import com.example.redisdemo.cache.common.synchronizer.ConcurrencyUtil;
+
+import com.example.redisdemo.cache.common.synchronizer.RedisRetrySynchronizer;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RScript;
