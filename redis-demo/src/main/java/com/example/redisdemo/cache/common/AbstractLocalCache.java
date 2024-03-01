@@ -5,7 +5,7 @@ import cn.hutool.core.map.MapUtil;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.*;
@@ -13,24 +13,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
+@Slf4j
+public abstract class AbstractLocalCache<V, T> implements Cache<String, V, T> {
 
-public abstract class AbstractLocalCache<K, V, T> implements Cache<K, V, T> {
+    final GetSetter<T, String, V> getSetter;
 
-    final GetSetter<T, K, V> getSetter;
+    LoadingCache<String, V> cache;
 
-    LoadingCache<K, V> cache;
-
-    final CacheConstant cacheConstant;
-
-
-    static final CacheConstant CACHE_DEFAULT = new CacheConstant(1000, 1000 * 60);
+    final CacheConfig config;
 
 
-    protected CacheLoader<K, V> getCacheCallBack() {
-        return new CacheLoader<K, V>() {
+
+    protected CacheLoader<String, V> getCacheCallBack() {
+        return new CacheLoader<String, V>() {
             @Override
-            public V load(K key) throws Exception {
-                Map<K, V> kvMap = getCacheKeyAndValue(Collections.singletonList(key));
+            public V load(String key) throws Exception {
+                Map<String, V> kvMap = getCacheKeyAndValue(Collections.singletonList(key));
                 if (MapUtil.isEmpty(kvMap)) {
                     return null;
                 }
@@ -38,10 +36,9 @@ public abstract class AbstractLocalCache<K, V, T> implements Cache<K, V, T> {
             }
 
             @Override
-            public @NonNull Map<@NonNull K, @NonNull V> loadAll(@NonNull Iterable<? extends @NonNull K> keys) throws Exception {
-                List<K> list = new ArrayList<>();
+            public @NonNull Map<@NonNull String, @NonNull V> loadAll(@NonNull Iterable<? extends @NonNull String> keys) throws Exception {
+                List<String> list = new ArrayList<>();
                 keys.forEach(list::add);
-                LogUtils.info("本地缓存没有命中，从数据库获取数据，keys：{}", CollUtil.join(keys, ","));
                 return getCacheKeyAndValue(list);
             }
 
@@ -49,34 +46,31 @@ public abstract class AbstractLocalCache<K, V, T> implements Cache<K, V, T> {
     }
 
 
-    protected AbstractLocalCache(CacheConfig cacheConfig, GetSetter<T, K, V> getSetter) {
-        this(getSetter, cacheConfig.getMaxCapacity() >= 0
-                && cacheConfig.getExpireTime() >= 0
-                ? new CacheConstant(cacheConfig.getMaxCapacity(), cacheConfig.getExpireTime())
-                : CACHE_DEFAULT);
+    protected AbstractLocalCache(CacheConfig cacheConfig, GetSetter<T, String, V> getSetter) {
+        this(getSetter, cacheConfig);
     }
 
-    protected AbstractLocalCache(GetSetter<T, K, V> getSetter) {
-        this(getSetter, CACHE_DEFAULT);
-    }
 
-    protected AbstractLocalCache(GetSetter<T, K, V> getSetter, CacheConstant cacheConstant) {
+    protected AbstractLocalCache(GetSetter<T, String, V> getSetter, CacheConfig config) {
         this.getSetter = getSetter;
-        this.cacheConstant = cacheConstant;
+        this.config = config;
         initCache();
     }
 
 
     private void initCache() {
-        LogUtils.info("初始化本地缓存，缓存大小：{}，缓存超时时间：{}ms", cacheConstant.maxSize, cacheConstant.expireTime);
+        log.info("Initializing local cache '{}' with size: {}, expiration time: {}ms",
+                config.getCode(),
+                config.getMaxCapacity(),
+                config.getExpireTime());
         this.cache = Caffeine.newBuilder()
-                .maximumSize(cacheConstant.maxSize)
-                .expireAfterWrite(cacheConstant.expireTime, TimeUnit.MILLISECONDS)
+                .maximumSize(config.getMaxCapacity())
+                .expireAfterWrite(config.getExpireTime(), TimeUnit.MILLISECONDS)
                 .build(getCacheCallBack());
     }
 
     @Override
-    public void removeKey(Collection<K> keys) {
+    public void removeKey(Collection<String> keys) {
         cache.invalidateAll(keys);
     }
 
@@ -85,27 +79,22 @@ public abstract class AbstractLocalCache<K, V, T> implements Cache<K, V, T> {
         if (CollUtil.isEmpty(list)) {
             return;
         }
-        Map<K, V> kvMap = list.stream().collect(Collectors.toMap(getSetter.keyGetter, getSetter.valueGetter));
+        Map<String, V> kvMap = list.stream().collect(Collectors.toMap(getSetter.keyGetter, getSetter.valueGetter));
         cache.putAll(kvMap);
     }
 
     @Override
-    public Map<K, V> asMap(Collection<K> keys) {
+    public Map<String, V> asMap(Collection<String> keys) {
         try {
             return cache.getAll(keys);
         } catch (Exception e) {
-            throw new RuntimeException("从缓存获取数据失败了");
+            log.error("从缓存获取数据失败了", e);
+            return Collections.emptyMap();
         }
     }
 
-    protected Map<K, V> getCacheKeyAndValue(List<K> keys) {
+    protected Map<String, V> getCacheKeyAndValue(List<String> keys) {
         return sourceAll(keys).stream().collect(Collectors.toMap(getSetter.keyGetter, getSetter.valueGetter));
-    }
-
-    @AllArgsConstructor
-    protected static class CacheConstant {
-        public final int maxSize;
-        public final long expireTime;
     }
 
 

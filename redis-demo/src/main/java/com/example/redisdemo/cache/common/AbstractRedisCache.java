@@ -1,30 +1,33 @@
 package com.example.redisdemo.cache.common;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.lang.Pair;
 import cn.hutool.core.lang.TypeReference;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import com.example.redisdemo.cache.common.deprecated.ConcurrencyUtil;
+import com.example.redisdemo.cache.common.deprecated.cache.RedisRetrySynchronizer;
+import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBuckets;
+import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executors;
+import javax.validation.constraints.NotNull;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
+
 
 /**
  * @param <V> 缓存值类型
  * @param <T> 缓存实体
  * @Description: redis缓存抽象类
  */
+@Slf4j
 public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
 
     //缓存key前缀
@@ -48,6 +51,7 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
 
     RBuckets rBuckets;
 
+    RScript rScript;
 
 
     /**
@@ -65,6 +69,8 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
     public void init() {
         this.keyPath = config.getCachePath() + RedisCacheConstant.CacheKeyComa;
         this.rBuckets = redisson.getBuckets(StringCodec.INSTANCE);
+        this.rScript=redisson.getScript(StringCodec.INSTANCE);
+        log.info("RedisCache initialized with key path: {},cacheCode:{},", keyPath, config.getCode());
     }
 
 
@@ -75,13 +81,12 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
 
     @Override
     public void removeKey(Collection<String> codes) {
-        LogUtils.info("开始删除redis缓存,keys：{}", codes);
+        log.debug("Attempting to delete keys from Redis cache: {}", codes);
         List<String> keys = codes.stream().map(it -> keyPath + it).collect(toList());
         try {
             redisson.getKeys().delete(keys.toArray(new String[0]));
         } catch (Exception exception) {
-            LogUtils.info("删除redis缓存失败了，移送队列尝试重试，keys:{}", codes);
-
+            log.error("Failed to delete Redis cache, transferring to queue for retry, keys: {}", codes);
             codes.forEach(it -> retry(it, null));
         }
     }
@@ -97,15 +102,23 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
         if (CollUtil.isEmpty(list)) {
             return;
         }
+        Map<String, V> map = list.stream().collect(Collectors.toMap(getSetter.keyGetter, getSetter.valueGetter));
+        put(map);
+    }
+
+    @Override
+    public void put(Map<String, V> map) {
         try {
-            Map<String, String> redisKeyValueMap = list.stream().collect(Collectors.toMap(getSetter.keyGetter.andThen(it -> keyPath + it), getSetter.valueGetter.andThen(JSONUtil::toJsonStr)));
-            rBuckets.set(redisKeyValueMap);
-            syncExpire(redisKeyValueMap);
+            log.debug("Putting map into Redis cache: {}", JSONUtil.toJsonStr(map));
+            Map<String, String> putMap = convertToCacheMap(map);
+            rBuckets.set(putMap);
+            syncExpire(putMap);
         } catch (Exception exception) {
-            LogUtils.error("批量添加数据失败，移送队列进行重试");
-            list.forEach(it -> retry(getSetter.keyGetter.apply(it), getSetter.valueGetter.apply(it)));
+            log.error("Batch data insertion failed, transferring to queue for retry");
+            map.forEach(this::retry);
         }
     }
+
 
     /**
      * 设置超时时间
@@ -117,8 +130,9 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
         if (config.getExpireTime() <= 0) {
             return;
         }
-        Executors.newSingleThreadExecutor().execute(() -> {
-            redisKeyValueMap.keySet().forEach(it -> redisson.getKeys().expire(it, config.getExpireTime(), TimeUnit.SECONDS));
+        ConcurrencyUtil.execute(() -> {
+            log.info("Synchronizing expiration time for keys: {}", redisKeyValueMap.keySet());
+            redisKeyValueMap.keySet().forEach(it -> redisson.getKeys().expire(it, config.getExpireTime(), TimeUnit.MILLISECONDS));
         });
     }
 
@@ -140,18 +154,25 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
 
         //如果没有命中的key为空，直接返回，或者不需要从原数据添加
         if (CollUtil.isEmpty(reKeys) || !weatherToReSet) {
-            Map<String, V> result = new HashMap<>();
-            map.forEach((k, v) -> {
-                result.put(k.replace(keyPath, ""), JSONUtil.isJson(v) ?
-                        JSONUtil.toBean(v, new TypeReference<V>() {
-                        }, false) : (V) v);
-            });
-            LogUtils.info("查询缓存结束。本次缓存查询结果数量:{},查询keys:{}", result.size(), CollUtil.sub(keys, 0, 10));
-            return result;
+            return cacheMap2SourceMap(map);
         }
-        LogUtils.info("没有全部命中缓存，从原数据添加缓存,本次缓存查询keys数量：{}，未命中缓存keys数量：{}", keys.size(), reKeys.size());
         retrySet(reKeys);
         return get(keys, false);
+    }
+
+    @NotNull
+    private Map<String, V> cacheMap2SourceMap(Map<String, String> cacheMap) {
+        Map<String, V> res = new HashMap<>(cacheMap.size());
+        cacheMap.forEach((k, v) -> {
+            Pair<String, V> pair = convertKeyAndValue(k, v);
+            res.put(pair.getKey(), pair.getValue());
+        });
+        return res;
+    }
+
+    private Pair<String, V> convertKeyAndValue(String k, String value) {
+        return Pair.of(k.replace(keyPath, ""), JSONUtil.isJson(value) ? JSONUtil.toBean(value, new TypeReference<V>() {
+        }, false) : (V) value);
     }
 
     /**
@@ -170,14 +191,15 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
 
         try {
             //获取锁成功，进行缓存构建,失败挂起当前线程等待锁线程释放锁
+            log.info("Retrying to set and get values for keys: {}", codes);
             if (!isRetrySynchronizer || redisRetrySynchronizer.lock(codes)) {
-                List<T> dates = sourceAll(codes);
-                put(dates);
-                return dates.stream().collect(Collectors.toMap(getSetter.keyGetter, getSetter.valueGetter));
+                Map<String, V> map = sourceMap(codes);
+                put(map);
+                return map;
             }
             return get(codes, false);
         } catch (Exception ex) {
-            LogUtils.error("构建缓存失败，本次构建keys：{}", CollUtil.join(codes, StrUtil.COMMA));
+            log.error("Cache build failed, keys for this build: {},message:{}", codes,ex.getMessage());
             throw ex;
         } finally {
             if (isRetrySynchronizer)
@@ -188,6 +210,49 @@ public abstract class AbstractRedisCache<V, T> implements Cache<String, V, T> {
     @Override
     public Map<String, V> asMap(Collection<String> keys) {
         return get(keys, true);
+    }
+
+
+    /**
+     * 从源数据获取数据
+     *
+     * @param keys
+     * @return
+     */
+    private Map<String, V> sourceMap(Collection<String> keys) {
+        log.info("Getting source map for keys: {}", keys);
+        List<T> dates = sourceAll(keys).stream()
+                .filter(it -> getSetter.keyGetter.apply(it) != null)
+                .filter(it -> getSetter.valueGetter.apply(it) != null)
+                .collect(toList());
+        return dates.stream().collect(Collectors.toMap(getSetter.keyGetter, getSetter.valueGetter));
+    }
+
+    private Map<String, String> convertToCacheMap(Map<String, V> sourceMap) {
+        LinkedHashMap<String, String> res = new LinkedHashMap<>();
+        sourceMap.forEach((k, v) -> res.put(keyPath + k, JSONUtil.toJsonStr(v)));
+        return res;
+    }
+
+
+    @Override
+    public Collection<V> removeAndGet(Collection<String> codes) {
+        log.debug("Removing and getting values for keys: {}", codes);
+        Map<String, V> sourceMap = sourceMap(codes);
+        Map<String, String> res = convertToCacheMap(sourceMap);
+        // 准备键和值的列表
+        List<String> keys = new ArrayList<>(res.keySet());
+        List<Object> values = new ArrayList<>(res.values());
+        //先前置删除缓存
+        removeKey(codes);
+        // Lua 脚本
+        String script = "for i=1,#KEYS do redis.call('del', KEYS[i]); redis.call('set', KEYS[i], ARGV[i]); end";
+
+        // 执行 Lua 脚本
+        rScript.eval(RScript.Mode.READ_WRITE, script, RScript.ReturnType.VALUE, Arrays.asList(keys.toArray()), values.toArray());
+        //异步设置超时时间
+        syncExpire(res);
+        return sourceMap.values();
     }
 
 }

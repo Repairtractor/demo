@@ -3,6 +3,7 @@ package com.example.redisdemo.cache.common;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
@@ -13,9 +14,11 @@ import static java.util.stream.Collectors.toList;
  * @param <V>
  * @param <T>
  */
-public class DefaultLocalCache<V, T> extends AbstractLocalCache<String, V, T> {
+public class DefaultLocalCache<V, T> extends AbstractLocalCache<V, T> {
 
     private final Function<Collection<String>, List<T>> allSource;
+
+    private static final String DEFAULT_CACHE_CODE = "default_local_cache";
 
 
     public static <V, T> Builder<V, T> builder(GetSetter<T, String, V> getSetter) {
@@ -26,10 +29,8 @@ public class DefaultLocalCache<V, T> extends AbstractLocalCache<String, V, T> {
         private final GetSetter<T, String, V> getSetter;
         private Function<Collection<String>, List<T>> allSource;
 
-        private int maxSize = 1000;
 
-        private CacheConstant cacheConstant;
-
+        private CacheConfig cacheConfig;
 
 
         public Builder(GetSetter<T, String, V> getSetter) {
@@ -37,12 +38,17 @@ public class DefaultLocalCache<V, T> extends AbstractLocalCache<String, V, T> {
         }
 
         public DefaultLocalCache<V, T> build() {
-            return new DefaultLocalCache<>(getSetter, allSource, cacheConstant);
+            return new DefaultLocalCache<>(getSetter, allSource, cacheConfig);
         }
 
 
         public Builder<V, T> allSource(Function<Collection<String>, List<T>> allSource) {
             this.allSource = allSource;
+            return this;
+        }
+
+        public Builder<V, T> config(CacheConfig config) {
+            this.cacheConfig = config;
             return this;
         }
 
@@ -53,25 +59,11 @@ public class DefaultLocalCache<V, T> extends AbstractLocalCache<String, V, T> {
             return this;
         }
 
-        public Builder<V, T> expireTime(Duration expireTime) {
-            this.cacheConstant = new CacheConstant(maxSize, expireTime.toMillis());
-            return this;
-        }
-
-        public Builder<V, T> maxSize(int maxSize) {
-            this.maxSize = maxSize;
-            return this;
-        }
-
-        public Builder<V, T> cacheConstant(CacheConstant cacheConstant) {
-            this.cacheConstant = cacheConstant;
-            return this;
-        }
     }
 
 
-    private DefaultLocalCache(GetSetter<T, String, V> getSetter, Function<Collection<String>, List<T>> allSource, CacheConstant cacheConstant) {
-        super(getSetter, cacheConstant);
+    private DefaultLocalCache(GetSetter<T, String, V> getSetter, Function<Collection<String>, List<T>> allSource, CacheConfig cacheConstant) {
+        super(getSetter, Objects.isNull(cacheConstant) ? new DefaultCacheConfig() : cacheConstant);
         this.allSource = allSource;
     }
 
@@ -80,4 +72,31 @@ public class DefaultLocalCache<V, T> extends AbstractLocalCache<String, V, T> {
     public List<T> sourceAll(Collection<String> keys) {
         return allSource.apply(keys);
     }
+
+
+    protected static class DefaultCacheConfig implements CacheConfig {
+
+
+        @Override
+        public String getCode() {
+            return DEFAULT_CACHE_CODE;
+        }
+
+        @Override
+        public String getKey() {
+            return DEFAULT_CACHE_CODE;
+        }
+
+        @Override
+        public int getMaxCapacity() {
+            return 100;
+        }
+
+        @Override
+        public long getExpireTime() {
+            return Duration.ofHours(1).toMillis();
+        }
+
+    }
+
 }

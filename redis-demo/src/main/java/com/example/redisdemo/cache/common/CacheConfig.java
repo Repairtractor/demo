@@ -16,7 +16,9 @@ public interface CacheConfig {
 
     long getExpireTime();
 
-    boolean isRetrySynchronizer();
+    default boolean isRetrySynchronizer(){
+        return false;
+    }
 
     default String getCachePath() {
         return getKey() + RedisCacheConstant.CacheKeyComa + getCode();

@@ -33,6 +33,14 @@ public interface Cache<K, V, T> {
         put(Collections.singletonList(t));
     }
 
+   default void put(Map<K, V> map){
+        throw new UnsupportedOperationException("put map");
+   }
+
+    default Collection<V> removeAndGet(Collection<K> keys) {
+        throw new UnsupportedOperationException("update");
+    }
+
 
     /**
      * 获取源数据
@@ -66,6 +74,10 @@ public interface Cache<K, V, T> {
             return null;
         }
         return vs.get(0);
+    }
+
+    default boolean contains(K k) {
+        return optionalGet(k).isPresent();
     }
 
     @AllArgsConstructor

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.lcc</groupId>
+        <artifactId>demo</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <groupId>com.lcc.spi</groupId>
+    <artifactId>MQ-demo</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>spi-demo</name>
+    <description>MQ-demo</description>
+
+    <packaging>jar</packaging>
+
+
+    <properties>
+        <java.version>8</java.version>
+    </properties>
+    <dependencies>
+
+
+        <!-- https://mvnrepository.com/artifact/com.google.apis/google-api-services-analyticsreporting -->
+<!--        <dependency>-->
+<!--            <groupId>com.google.apis</groupId>-->
+<!--            <artifactId>google-api-services-analyticsreporting</artifactId>-->
+<!--            <version>v4-rev20211020-2.0.0</version>-->
+<!--        </dependency>-->
+
+        <dependency>
+            <groupId>com.google.api-ads</groupId>
+            <artifactId>google-ads</artifactId>
+            <version>27.0.0</version>
+
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.beust</groupId>P
+            <artifactId>jcommander</artifactId>
+            <version>1.64</version>
+        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>com.google.analytics</groupId>-->
+<!--            <artifactId>google-analytics-data</artifactId>-->
+<!--            <version>0.35.0</version>-->
+<!--        </dependency>-->
+
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>easyexcel</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+
+
+    </dependencies>
+
+
+    <build>
+
+    </build>
+
+</project>

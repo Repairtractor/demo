@@ -4,8 +4,8 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.json.JSONUtil;
 import com.example.redisdemo.cache.common.CacheConfig;
-import com.example.redisdemo.cache.common.LogUtils;
 import com.example.redisdemo.cache.common.RedisCacheConstant;
+import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
 
 import java.util.Collection;
@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
+@Slf4j
 public abstract class AbstratctRedisRetrySynchronizer<V> implements RedisRetrySynchronizer<V> {
 
     /**
@@ -82,7 +83,7 @@ public abstract class AbstratctRedisRetrySynchronizer<V> implements RedisRetrySy
         Executors.newSingleThreadExecutor().execute(() -> {
             while (true) {
                 try {
-                    LogUtils.info("开始进行队列重试机制，当前队列数量：{}", retryingSize());
+                    log.info("开始进行队列重试机制，当前队列数量：{}", retryingSize());
                     Collection<ReTime> reTimes = consume();
                     if (CollUtil.isEmpty(reTimes)) {
                         isRetrying.set(false);
@@ -106,19 +107,19 @@ public abstract class AbstratctRedisRetrySynchronizer<V> implements RedisRetrySy
 
     protected void add(ReTime reTime) {
         try {
-            LogUtils.info("当前线程正在添加缓存，当前的缓冲队列为还有{}条数据", retryingSize());
+            log.info("当前线程正在添加缓存，当前的缓冲队列为还有{}条数据", retryingSize());
 
             addRedisValue(reTime.redisKey, reTime.value);
             //添加成功了，删掉失败队列中的key
             removeFailKey(reTime.code);
         } catch (Exception e) {
             if (canNotAdd(reTime)) {
-                LogUtils.error("重试添加操作失败，key已经超过重试次数，将此key失败集合：{}", reTime.code);
+                log.error("重试添加操作失败，key已经超过重试次数，将此key失败集合：{}", reTime.code);
                 addFailKey(reTime.code);
                 return;
             }
             int time = reTime.time.getAndIncrement();
-            LogUtils.error("重试添加操作失败，key:{}继续进行重试，当前已重试：{}", reTime.code, time);
+            log.error("重试添加操作失败，key:{}继续进行重试，当前已重试：{}", reTime.code, time);
             retry(reTime);
         }
     }
@@ -132,16 +133,16 @@ public abstract class AbstratctRedisRetrySynchronizer<V> implements RedisRetrySy
 
 
     protected void remove(ReTime reTime) {
-        LogUtils.info("开始删除redis缓存,keys：{}", reTime.code);
+        log.info("开始删除redis缓存,keys：{}", reTime.code);
         try {
             deleteRedisValue(reTime.redisKey);
         } catch (Exception e) {
             if (canNotAdd(reTime)) {
-                LogUtils.info("超过重试次数，丢弃此key：{}", reTime.code);
+                log.info("超过重试次数，丢弃此key：{}", reTime.code);
                 addFailKey(reTime.code);
             }
             int time = reTime.time.getAndIncrement();
-            LogUtils.info("删除redis缓存失败了，key:{},当前重试次数为：{}", reTime.code, time);
+            log.info("删除redis缓存失败了，key:{},当前重试次数为：{}", reTime.code, time);
             retry(reTime);
         }
     }
