@@ -43,6 +43,7 @@ public class Consumer1 implements ApplicationRunner {
             log.info("当前服务没有配置消费组或者消费者，不会进行消费");
             return;
         }
+        //异步线程启动进行消费
         CompletableFuture.runAsync(() -> {
             consumer(StreamPublisher.topic, groupName, streamName);
         }, Executors.newSingleThreadExecutor());

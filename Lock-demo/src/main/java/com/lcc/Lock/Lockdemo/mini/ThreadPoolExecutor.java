@@ -151,7 +151,7 @@ public class ThreadPoolExecutor extends AbstractExecutor {
                 return false;
             }
 
-            //如果当前线程数量超过了核心线程数的一般，默认先查询空闲线程
+            //如果当前线程数量超过了核心线程数的一半，默认先查询空闲线程，这里是为了提高效率
             Worker worker = null;
 
             if ((workers.size() < corePoolSize / 2)) {
@@ -207,7 +207,7 @@ public class ThreadPoolExecutor extends AbstractExecutor {
                 } else {
                     LogUtils.info("线程被强制唤醒了，开始执行任务");
                     //可以强制打断空闲的线程，执行新加入的任务
-                    runWorker(worker);
+
                 }
             }
         }
