@@ -1,4 +1,4 @@
-package com.lcc.Lock.Lockdemo.mini;
+package com.lcc.Lock.Lockdemo.miniExecutor;
 
 /**
  * mini executor,这个接口只有执行runnable的行为

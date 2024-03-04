@@ -1,4 +1,4 @@
-package com.lcc.Lock.Lockdemo.mini;
+package com.lcc.Lock.Lockdemo.miniExecutor;
 
 /**
  * 拒绝策略接口

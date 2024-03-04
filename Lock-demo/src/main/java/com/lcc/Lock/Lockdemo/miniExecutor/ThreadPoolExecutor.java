@@ -1,4 +1,4 @@
-package com.lcc.Lock.Lockdemo.mini;
+package com.lcc.Lock.Lockdemo.miniExecutor;
 
 import cn.hutool.core.thread.ThreadUtil;
 import lombok.Data;
